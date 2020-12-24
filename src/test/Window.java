@@ -5,6 +5,9 @@ import java.awt.Graphics;
 import java.awt.Toolkit;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
+import java.io.File;
+import java.io.IOException;
+import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 
 import graphicPipeline.Fbo;
@@ -12,13 +15,13 @@ import graphicPipeline.Mesh;
 import graphicPipeline.MeshRenderer;
 import graphicPipeline.Texture;
 import maths.Matrix;
-import shader.Shader;
 
 public class Window extends KeyAdapter {
 
     private static JFrame frame;
     public static final int WIDTH = 1080, HEIGHT = 720;
     private static int switchInterval = 10;
+    private static boolean takeScreenshotOfNextFrame = false;
 
     private static Fbo screenFbo = new Fbo(WIDTH, HEIGHT);
     private static MeshRenderer renderer = new MeshRenderer();
@@ -28,7 +31,7 @@ public class Window extends KeyAdapter {
     static float scale = 1;
     private static int fpsCounter = 0;
     private static long nextSecond = System.currentTimeMillis();
-    private static int index = 0;
+    private static int modelIndex = 0;
     private static BasicShader shader = new BasicShader();
 
     private static float lightRotation = 0;
@@ -52,7 +55,7 @@ public class Window extends KeyAdapter {
     private static int lastFps = 0;
     private static long lastSwitchTime = 0;
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws IOException {
         Window window = new Window();
         Mesh lightCube = Loader.loadOBJ("box");
         meshes = new Mesh[]{Loader.loadOBJ("IntergalacticSpaceship"), Loader.loadOBJ("dragon"), Loader.loadOBJ("lamp")};
@@ -67,7 +70,8 @@ public class Window extends KeyAdapter {
         float[] viewMatrix = new float[16];
         float[] projView = new float[16];
         Matrix.multiply4x4Matrix(projMatrix, viewMatrix, projView);
-        shader.setTexture(textures[index]);
+        shader.setTexture(textures[modelIndex]);
+        new File("screenshots").mkdir();
         while (true) {
             ry += 5;
             ry = ry % 360;
@@ -82,12 +86,16 @@ public class Window extends KeyAdapter {
                     Matrix.createTransformationMatrix(-transX, -transY, -transZ, 0, 0, 0, 1, viewMatrix));
             shader.loadUniform("pv", projView);
             shader.loadUniform("camPos", new float[]{transX, transY, transZ});
-            renderer.renderMesh(meshes[index]);
+            renderer.renderMesh(meshes[modelIndex]);
             shader.loadUniform("transformation", Matrix.createTransformationMatrix(lightVec[0], lightVec[1], lightVec[2], 0, ry, 0, 0.2f, transformationMatrix));
             renderer.renderMesh(lightCube);
             Graphics g = frame.getGraphics();
             g.clearRect(0, screenFbo.getHeight(), frame.getWidth(), frame.getHeight());
             screenFbo.renderFboOnScreen(g);
+            if (takeScreenshotOfNextFrame) {
+                takeScreenshotOfNextFrame = false;
+                ImageIO.write(screenFbo.getFbo(), "PNG", new File("screenshots/screenshot_" + modelIndex + ".png"));
+            }
             screenFbo.clear();
             g.drawString("Pfeiltasten benutzen, um Kamera nach oben/unten, links/rechts zu bewegen", 100, screenFbo.getHeight() + 20);
             g.drawString("+/- benutzen, um Kamera nach vorne/hinten zu bewegen", 100, screenFbo.getHeight() + 40);
@@ -131,6 +139,9 @@ public class Window extends KeyAdapter {
         if (k.getKeyCode() == KeyEvent.VK_N) {
             nextModel();
         }
+        if (k.getKeyCode() == KeyEvent.VK_S) {
+            takeScreenshotOfNextFrame=true;
+        }
     }
 
     @Override
@@ -157,9 +168,9 @@ public class Window extends KeyAdapter {
     }
 
     private static void nextModel() {
-        index++;
-        index = index % meshes.length;
-        shader.setTexture(textures[index]);
+        modelIndex++;
+        modelIndex = modelIndex % meshes.length;
+        shader.setTexture(textures[modelIndex]);
         lastSwitchTime = System.currentTimeMillis();
     }
 }
