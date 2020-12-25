@@ -21,3 +21,9 @@ Das Stanford Dragon Modell:
 
 Eine Lampe:
 ![Bild: Verschiedene Fälle](screenshots/screenshot_2.png)
+
+### Project Configuration and Running
+
+Sollte das Project nicht richtig in IntelliJ importiert werden, dann muss der Ordner **resources** als Resource Ordner konfiguriert werden, und der Ordner **src** als Source Ordner.
+
+Die Hauptklasse befindet sich unter: **src/test/Window.java**
